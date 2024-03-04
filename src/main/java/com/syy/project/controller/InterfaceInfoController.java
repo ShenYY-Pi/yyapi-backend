@@ -2,17 +2,21 @@ package com.syy.project.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.google.gson.Gson;
 import com.syy.project.annotation.AuthCheck;
 import com.syy.project.common.*;
 import com.syy.project.constant.CommonConstant;
 import com.syy.project.exception.BusinessException;
 import com.syy.project.model.dto.interfaceinfo.InterfaceInfoAddRequest;
+import com.syy.project.model.dto.interfaceinfo.InterfaceInfoInvokeRequest;
 import com.syy.project.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
 import com.syy.project.model.dto.interfaceinfo.InterfaceInfoUpdateRequest;
 import com.syy.project.model.entity.InterfaceInfo;
 import com.syy.project.model.entity.User;
+import com.syy.project.model.enums.InterfaceInfoStatusEnum;
 import com.syy.project.service.InterfaceInfoService;
 import com.syy.project.service.UserService;
+import com.syy.yyapiclientsdk.client.YyApiClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -36,6 +40,9 @@ public class InterfaceInfoController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private YyApiClient yyApiClient;
 
     // region 增删改查
 
@@ -206,19 +213,18 @@ public class InterfaceInfoController {
         if (idRequest == null || idRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-
-        InterfaceInfo interfaceInfo = new InterfaceInfo();
         long id = idRequest.getId();
         // 判断接口是否能调用
-
-
-
-        // 判断是否存在
-        InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
-        if (oldInterfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        com.syy.yyapiclientsdk.model.User user = new com.syy.yyapiclientsdk.model.User();
+        user.setUsername("shenyy");
+        String username = yyApiClient.getUserNameByPost(user);
+        if (StringUtils.isBlank(username)) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
         // 仅本人或管理员可修改
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        interfaceInfo.setId(id);
+        interfaceInfo.setStatus(InterfaceInfoStatusEnum.ONLINE.getValue());
         boolean result = interfaceInfoService.updateById(interfaceInfo);
         return ResultUtils.success(result);
     }
@@ -237,23 +243,52 @@ public class InterfaceInfoController {
         if (idRequest == null || idRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        InterfaceInfo interfaceInfo = new InterfaceInfo();
-        BeanUtils.copyProperties(idRequest, interfaceInfo);
-        // 参数校验
-        interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
-        User user = userService.getLoginUser(request);
         long id = idRequest.getId();
-        // 判断是否存在
-        InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
-        if (oldInterfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        // 判断接口是否能调用
+        com.syy.yyapiclientsdk.model.User user = new com.syy.yyapiclientsdk.model.User();
+        user.setUsername("ttt");
+        String username = yyApiClient.getUserNameByPost(user);
+        if (StringUtils.isBlank(username)) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
         // 仅本人或管理员可修改
-        if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        InterfaceInfo interfaceInfo = new InterfaceInfo();
+        interfaceInfo.setId(id);
+        interfaceInfo.setStatus(InterfaceInfoStatusEnum.OFFLINE.getValue());
         boolean result = interfaceInfoService.updateById(interfaceInfo);
         return ResultUtils.success(result);
     }
 
+    /**
+     * 测试调用
+     * @param interfaceInfoInvokeRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/invoke")
+    public BaseResponse<Object> invokeInterfaceInfo(@RequestBody InterfaceInfoInvokeRequest interfaceInfoInvokeRequest,
+                                                      HttpServletRequest request) {
+        if (interfaceInfoInvokeRequest == null || interfaceInfoInvokeRequest.getId() <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long id = interfaceInfoInvokeRequest.getId();
+        String userRequestParams = interfaceInfoInvokeRequest.getUserRequestParams();
+        // 判断是否存在
+        InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
+        if (oldInterfaceInfo == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        if (oldInterfaceInfo.getStatus() != InterfaceInfoStatusEnum.ONLINE.getValue()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"接口已关闭");
+        }
+        User loginUser = userService.getLoginUser(request);
+
+        String accessKey = loginUser.getAccessKey();
+        String secretKey = loginUser.getSecretKey();
+        YyApiClient tempClient = new YyApiClient(accessKey,secretKey);
+        Gson gson = new Gson();
+        com.syy.yyapiclientsdk.model.User user = gson.fromJson(userRequestParams, com.syy.yyapiclientsdk.model.User.class);
+        String userNameByPost = tempClient.getUserNameByPost(user);
+        return ResultUtils.success(userNameByPost);
+    }
 }

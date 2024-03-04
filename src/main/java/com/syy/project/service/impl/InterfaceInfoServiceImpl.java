@@ -1,16 +1,15 @@
 package com.syy.project.service.impl;
 
-import java.util.Date;
-
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.syy.project.common.ErrorCode;
 import com.syy.project.exception.BusinessException;
 import com.syy.project.mapper.InterfaceInfoMapper;
 import com.syy.project.model.entity.InterfaceInfo;
 import com.syy.project.service.InterfaceInfoService;
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+
+import java.util.Date;
 
 /**
  * @author SYY
@@ -25,19 +24,16 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (interfaceInfo == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        Long id = interfaceInfo.getId();
         String name = interfaceInfo.getName();
         String description = interfaceInfo.getDescription();
         String url = interfaceInfo.getUrl();
         String requestHeader = interfaceInfo.getRequestHeader();
         String responseHeader = interfaceInfo.getResponseHeader();
-        Integer status = interfaceInfo.getStatus();
         String method = interfaceInfo.getMethod();
-        Long userId = interfaceInfo.getUserId();
-        Date createTime = interfaceInfo.getCreateTime();
-        Date updateTime = interfaceInfo.getUpdateTime();
-        Integer isDelete = interfaceInfo.getIsDelete();
         // 创建时，所有参数必须非空
+        if (StringUtils.isAnyBlank(name, description, url, requestHeader, responseHeader, method)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
     }
 }
 
