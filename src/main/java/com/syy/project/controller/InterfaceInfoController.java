@@ -216,7 +216,7 @@ public class InterfaceInfoController {
         long id = idRequest.getId();
         // 判断接口是否能调用
         com.syy.yyapiclientsdk.model.User user = new com.syy.yyapiclientsdk.model.User();
-        user.setUsername("shenyy");
+        user.setUsername("syy");
         String username = yyApiClient.getUserNameByPost(user);
         if (StringUtils.isBlank(username)) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
@@ -246,7 +246,7 @@ public class InterfaceInfoController {
         long id = idRequest.getId();
         // 判断接口是否能调用
         com.syy.yyapiclientsdk.model.User user = new com.syy.yyapiclientsdk.model.User();
-        user.setUsername("ttt");
+        user.setUsername("syy");
         String username = yyApiClient.getUserNameByPost(user);
         if (StringUtils.isBlank(username)) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
