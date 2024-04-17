@@ -1,8 +1,7 @@
 package com.syy.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.syy.project.model.entity.InterfaceInfo;
-import com.syy.project.model.entity.Post;
+import com.syy.common.model.entity.InterfaceInfo;
 
 /**
 * @author SYY
